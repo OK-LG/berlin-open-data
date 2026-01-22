@@ -1,0 +1,39 @@
+{
+  "name": "berlin-open-data",
+  "version": "1.0.0",
+  "description": "MCP server for Berlin Open Data WFS services",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "berlin-open-data": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "keywords": [
+    "mcp",
+    "berlin",
+    "geodata",
+    "wfs",
+    "opendata"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "proj4": "^2.12.1",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/proj4": "^2.5.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
