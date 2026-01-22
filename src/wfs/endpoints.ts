@@ -18,6 +18,13 @@ export const ENDPOINTS = {
     geometryColumn: "geom",
   } satisfies WFSEndpoint,
 
+  // Buildings (Gebäude)
+  buildings: {
+    baseUrl: `${GDI_BASE}/alkis_gebaeude`,
+    typeName: "alkis_gebaeude:gebaeude",
+    geometryColumn: "geom",
+  } satisfies WFSEndpoint,
+
   // Land use plan (Flächennutzungsplan)
   landUsePlan: {
     baseUrl: `${GDI_BASE}/fnp_ak`,

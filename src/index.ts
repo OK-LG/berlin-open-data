@@ -9,6 +9,7 @@ import {
 } from "./tools/definitions.js";
 import { geocodeAddress } from "./tools/geocode-address.js";
 import { getParcelInfo } from "./tools/get-parcel.js";
+import { getBuildingFootprints } from "./tools/get-buildings.js";
 import { getLandUsePlan } from "./tools/get-land-use.js";
 import { getDevelopmentPlans } from "./tools/get-development-plans.js";
 import { getRedevelopmentAreas } from "./tools/get-redevelopment-areas.js";
@@ -66,6 +67,30 @@ server.tool(
     };
 
     const result = await getParcelInfo(coords);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
+    };
+  }
+);
+
+// Register get_building_footprints tool
+server.tool(
+  "get_building_footprints",
+  TOOL_METADATA.get_building_footprints.description,
+  coordinatesInputSchema,
+  async (args) => {
+    const coords: WGS84Coordinates = {
+      lat: args.lat,
+      lon: args.lon,
+    };
+
+    const result = await getBuildingFootprints(coords);
 
     return {
       content: [

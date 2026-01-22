@@ -6,9 +6,11 @@ An MCP (Model Context Protocol) server that wraps Berlin's WFS geodata services,
 
 - **Address Geocoding**: Convert Berlin addresses to coordinates
 - **Parcel Information**: Get cadastral data (Flurstück) for any location
+- **Building Footprints**: Get building polygons (Gebäude) from ALKIS
 - **Land Use Plans**: Query the FNP (Flächennutzungsplan) designation
 - **Development Plans**: Find applicable B-Pläne (Bebauungspläne)
 - **Redevelopment Areas**: Check Sanierungsgebiet status
+- **Land Values**: Get Bodenrichtwert (BORIS) for 2023-2025
 
 ## Installation
 
@@ -49,6 +51,16 @@ Geocode a Berlin address to coordinates.
 
 #### `get_parcel_info`
 Get cadastral parcel information at coordinates.
+
+```json
+{
+  "lat": 52.5170365,
+  "lon": 13.3888599
+}
+```
+
+#### `get_building_footprints`
+Get building footprints (polygons) at coordinates (50m radius).
 
 ```json
 {
@@ -103,7 +115,9 @@ All data is queried from Berlin's official WFS (Web Feature Service) endpoints:
 
 - **Addresses**: `gdi.berlin.de/services/wfs/adressen_berlin`
 - **Parcels**: `gdi.berlin.de/services/wfs/alkis_flurstuecke`
+- **Buildings**: `gdi.berlin.de/services/wfs/alkis_gebaeude`
 - **Land Use Plan**: `gdi.berlin.de/services/wfs/fnp_ak`
+- **Land Values (BORIS)**: `gdi.berlin.de/services/wfs/brw2023-2025`
 - **Development Plans**: `gdi.berlin.de/services/wfs/bplan`
 - **Redevelopment Areas**: `gdi.berlin.de/services/wfs/sanier`
 

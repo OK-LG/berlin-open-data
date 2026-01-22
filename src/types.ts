@@ -41,6 +41,12 @@ export interface ParcelInfo {
   boundary_wgs84: GeoJSONPolygon;
 }
 
+// Building types
+export interface Building {
+  geometry: GeoJSONGeometry | null;
+  properties: Record<string, unknown>;
+}
+
 // GeoJSON types
 export interface GeoJSONPolygon {
   type: "Polygon";
@@ -133,6 +139,7 @@ export interface Bodenrichtwert {
 export interface PropertyLookupResult {
   address: GeocodedAddress;
   parcel?: ParcelInfo;
+  buildings: Building[];
   land_use_plan?: LandUsePlan;
   bodenrichtwert?: Bodenrichtwert;
   development_plans: DevelopmentPlan[];

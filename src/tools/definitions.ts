@@ -35,6 +35,10 @@ export const TOOL_METADATA = {
     description:
       "Check if a location is within a redevelopment area (Sanierungsgebiet). Returns array of areas with type (comprehensive, simplified, or lifted).",
   },
+  get_building_footprints: {
+    description:
+      "Get building footprints (Gebäude) at a location. Returns an array of building polygons from ALKIS cadastral data within 50m of the coordinates.",
+  },
   get_bodenrichtwert: {
     description:
       "Get the Bodenrichtwert (official land value) from BORIS Berlin for a location. Returns data for the last 3 years (2023-2025) including: raw land value (brw) in €/m², effective value with GFZ (brw_with_gfz = brw × floor area ratio), land use type, and trend analysis showing year-over-year changes.",

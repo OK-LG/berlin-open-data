@@ -1,6 +1,7 @@
 import type { AddressInput, PropertyLookupResult, ToolResult } from "../types.js";
 import { geocodeAddress } from "./geocode-address.js";
 import { getParcelInfo } from "./get-parcel.js";
+import { getBuildingFootprints } from "./get-buildings.js";
 import { getLandUsePlan } from "./get-land-use.js";
 import { getBodenrichtwert } from "./get-bodenrichtwert.js";
 import { getDevelopmentPlans } from "./get-development-plans.js";
@@ -24,9 +25,10 @@ export async function lookupProperty(
   const { wgs84 } = address.coordinates;
 
   // Step 2: Run all spatial queries in parallel
-  const [parcelResult, landUseResult, bodenrichtwertResult, plansResult, areasResult] =
+  const [parcelResult, buildingsResult, landUseResult, bodenrichtwertResult, plansResult, areasResult] =
     await Promise.all([
       getParcelInfo(wgs84),
+      getBuildingFootprints(wgs84),
       getLandUsePlan(wgs84),
       getBodenrichtwert(wgs84),
       getDevelopmentPlans(wgs84),
@@ -37,6 +39,7 @@ export async function lookupProperty(
   const result: PropertyLookupResult = {
     address,
     parcel: parcelResult.success ? parcelResult.data : undefined,
+    buildings: buildingsResult.success ? buildingsResult.data : [],
     land_use_plan: landUseResult.success ? landUseResult.data : undefined,
     bodenrichtwert: bodenrichtwertResult.success ? bodenrichtwertResult.data : undefined,
     development_plans: plansResult.success ? plansResult.data : [],
