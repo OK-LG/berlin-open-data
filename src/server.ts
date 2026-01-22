@@ -136,8 +136,8 @@ async function handleMcpRequest(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url || "/", `http://${req.headers.host}`);
   const sessionId = req.headers["mcp-session-id"] as string || url.searchParams.get("sessionId");
 
-  // For new sessions (no session ID or initialize request), create new transport
-  if (!sessionId || req.method === "POST") {
+  // For new sessions (no session ID), create new transport
+  if (!sessionId) {
     // Check if this is an initialize request by peeking at the body
     const newSessionId = randomUUID();
     const transport = new StreamableHTTPServerTransport({
