@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * HTTP server entry point for remote MCP hosting
+ * Uses stateless request handling - creates new server per request
  */
-import { createServer } from "node:http";
+import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { randomUUID } from "node:crypto";
@@ -23,112 +24,172 @@ import type { AddressInput, WGS84Coordinates } from "./types.js";
 
 const PORT = parseInt(process.env.PORT || "8080", 10);
 
-// Create MCP server
-const mcpServer = new McpServer(
-  {
-    name: "berlin-open-data",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      tools: {},
+// Store active transports by session ID
+const transports = new Map<string, StreamableHTTPServerTransport>();
+
+// Function to create and configure a new MCP server instance
+function createMcpServer(): McpServer {
+  const server = new McpServer(
+    {
+      name: "berlin-open-data",
+      version: "1.0.0",
     },
-  }
-);
+    {
+      capabilities: {
+        tools: {},
+      },
+    }
+  );
 
-// Register all tools (same as index.ts)
-mcpServer.tool(
-  "geocode_address",
-  TOOL_METADATA.geocode_address.description,
-  addressInputSchema,
-  async (args) => {
-    const input: AddressInput = {
-      street: args.street,
-      house_number: args.house_number,
-      postal_code: args.postal_code,
-    };
-    const result = await geocodeAddress(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  }
-);
+  // Register all tools
+  server.tool(
+    "geocode_address",
+    TOOL_METADATA.geocode_address.description,
+    addressInputSchema,
+    async (args) => {
+      const input: AddressInput = {
+        street: args.street,
+        house_number: args.house_number,
+        postal_code: args.postal_code,
+      };
+      const result = await geocodeAddress(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
 
-mcpServer.tool(
-  "get_parcel_info",
-  TOOL_METADATA.get_parcel_info.description,
-  coordinatesInputSchema,
-  async (args) => {
-    const coords: WGS84Coordinates = { lat: args.lat, lon: args.lon };
-    const result = await getParcelInfo(coords);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  }
-);
+  server.tool(
+    "get_parcel_info",
+    TOOL_METADATA.get_parcel_info.description,
+    coordinatesInputSchema,
+    async (args) => {
+      const coords: WGS84Coordinates = { lat: args.lat, lon: args.lon };
+      const result = await getParcelInfo(coords);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
 
-mcpServer.tool(
-  "get_land_use_plan",
-  TOOL_METADATA.get_land_use_plan.description,
-  coordinatesInputSchema,
-  async (args) => {
-    const coords: WGS84Coordinates = { lat: args.lat, lon: args.lon };
-    const result = await getLandUsePlan(coords);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  }
-);
+  server.tool(
+    "get_land_use_plan",
+    TOOL_METADATA.get_land_use_plan.description,
+    coordinatesInputSchema,
+    async (args) => {
+      const coords: WGS84Coordinates = { lat: args.lat, lon: args.lon };
+      const result = await getLandUsePlan(coords);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
 
-mcpServer.tool(
-  "get_development_plans",
-  TOOL_METADATA.get_development_plans.description,
-  coordinatesInputSchema,
-  async (args) => {
-    const coords: WGS84Coordinates = { lat: args.lat, lon: args.lon };
-    const result = await getDevelopmentPlans(coords);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  }
-);
+  server.tool(
+    "get_development_plans",
+    TOOL_METADATA.get_development_plans.description,
+    coordinatesInputSchema,
+    async (args) => {
+      const coords: WGS84Coordinates = { lat: args.lat, lon: args.lon };
+      const result = await getDevelopmentPlans(coords);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
 
-mcpServer.tool(
-  "get_redevelopment_areas",
-  TOOL_METADATA.get_redevelopment_areas.description,
-  coordinatesInputSchema,
-  async (args) => {
-    const coords: WGS84Coordinates = { lat: args.lat, lon: args.lon };
-    const result = await getRedevelopmentAreas(coords);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  }
-);
+  server.tool(
+    "get_redevelopment_areas",
+    TOOL_METADATA.get_redevelopment_areas.description,
+    coordinatesInputSchema,
+    async (args) => {
+      const coords: WGS84Coordinates = { lat: args.lat, lon: args.lon };
+      const result = await getRedevelopmentAreas(coords);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
 
-mcpServer.tool(
-  "get_bodenrichtwert",
-  TOOL_METADATA.get_bodenrichtwert.description,
-  coordinatesInputSchema,
-  async (args) => {
-    const coords: WGS84Coordinates = { lat: args.lat, lon: args.lon };
-    const result = await getBodenrichtwert(coords);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  }
-);
+  server.tool(
+    "get_bodenrichtwert",
+    TOOL_METADATA.get_bodenrichtwert.description,
+    coordinatesInputSchema,
+    async (args) => {
+      const coords: WGS84Coordinates = { lat: args.lat, lon: args.lon };
+      const result = await getBodenrichtwert(coords);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
 
-mcpServer.tool(
-  "lookup_property",
-  TOOL_METADATA.lookup_property.description,
-  addressInputSchema,
-  async (args) => {
-    const input: AddressInput = {
-      street: args.street,
-      house_number: args.house_number,
-      postal_code: args.postal_code,
-    };
-    const result = await lookupProperty(input);
-    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-  }
-);
+  server.tool(
+    "lookup_property",
+    TOOL_METADATA.lookup_property.description,
+    addressInputSchema,
+    async (args) => {
+      const input: AddressInput = {
+        street: args.street,
+        house_number: args.house_number,
+        postal_code: args.postal_code,
+      };
+      const result = await lookupProperty(input);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+  );
 
-// Create HTTP transport
-const transport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: () => randomUUID(),
-});
+  return server;
+}
+
+// Handle MCP requests with session management
+async function handleMcpRequest(req: IncomingMessage, res: ServerResponse) {
+  // Get session ID from header or query param
+  const url = new URL(req.url || "/", `http://${req.headers.host}`);
+  const sessionId = req.headers["mcp-session-id"] as string || url.searchParams.get("sessionId");
+
+  // For new sessions (no session ID or initialize request), create new transport
+  if (!sessionId || req.method === "POST") {
+    // Check if this is an initialize request by peeking at the body
+    const newSessionId = randomUUID();
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => newSessionId,
+    });
+
+    // Create and connect a new MCP server for this session
+    const mcpServer = createMcpServer();
+    await mcpServer.connect(transport);
+
+    // Store for future requests in this session
+    transports.set(newSessionId, transport);
+
+    // Clean up old sessions (keep last 100)
+    if (transports.size > 100) {
+      const oldestKey = transports.keys().next().value;
+      if (oldestKey) transports.delete(oldestKey);
+    }
+
+    await transport.handleRequest(req, res);
+    return;
+  }
+
+  // For existing sessions, use stored transport
+  const transport = transports.get(sessionId);
+  if (transport) {
+    await transport.handleRequest(req, res);
+  } else {
+    // Session not found - create new one
+    const newTransport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => sessionId,
+    });
+    const mcpServer = createMcpServer();
+    await mcpServer.connect(newTransport);
+    transports.set(sessionId, newTransport);
+    await newTransport.handleRequest(req, res);
+  }
+}
 
 // Create HTTP server
 const httpServer = createServer(async (req, res) => {
+  // CORS headers for remote access
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, mcp-session-id");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   // Health check endpoint
   if (req.url === "/health" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -138,7 +199,13 @@ const httpServer = createServer(async (req, res) => {
 
   // MCP endpoint
   if (req.url === "/mcp" || req.url?.startsWith("/mcp?")) {
-    await transport.handleRequest(req, res);
+    try {
+      await handleMcpRequest(req, res);
+    } catch (error) {
+      console.error("MCP request error:", error);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Internal server error" }));
+    }
     return;
   }
 
@@ -160,18 +227,9 @@ const httpServer = createServer(async (req, res) => {
   res.end(JSON.stringify({ error: "Not found" }));
 });
 
-// Connect MCP server to transport
-async function main() {
-  await mcpServer.connect(transport);
-
-  httpServer.listen(PORT, () => {
-    console.log(`Berlin Open Data MCP server running on http://0.0.0.0:${PORT}`);
-    console.log(`MCP endpoint: http://0.0.0.0:${PORT}/mcp`);
-    console.log(`Health check: http://0.0.0.0:${PORT}/health`);
-  });
-}
-
-main().catch((error) => {
-  console.error("Fatal error:", error);
-  process.exit(1);
+// Start server
+httpServer.listen(PORT, () => {
+  console.log(`Berlin Open Data MCP server running on http://0.0.0.0:${PORT}`);
+  console.log(`MCP endpoint: http://0.0.0.0:${PORT}/mcp`);
+  console.log(`Health check: http://0.0.0.0:${PORT}/health`);
 });
